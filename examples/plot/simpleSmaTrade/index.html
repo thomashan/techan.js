@@ -22,8 +22,32 @@
         stroke-width: 1;
     }
 
+    path.up {
+        stroke: Green;
+    }
+
+    path.down {
+        stroke: Red;
+    }
+
     path.volume {
         fill: #cccccc;
+    }
+
+    .smaBid path.line {
+        stroke: Red;
+    }
+
+    .smaAsk path.line {
+        stroke: Green;
+    }
+
+    .smaPT4HBid path.line {
+        stroke: Orange;
+    }
+
+    .smaPT4HAsk path.line {
+        stroke: Blue;
     }
 
     path.line {
@@ -50,21 +74,21 @@
     .crosshair .axisannotation path {
         fill: orange;
     }
-    
+
 </style>
 <body>
 <button>Update</button>
 <script src="http://d3js.org/d3.v4.min.js"></script>
 <script src="http://techanjs.org/techan.min.js"></script>
 <script>
-    
+
     var margin = {top: 20, right: 20, bottom: 100, left: 55},
         margin2 = {top: 420, right: 20, bottom: 20, left: 55},
         width = 960 - margin.left - margin.right,
         height = 500 - margin.top - margin.bottom,
         height2 = 500 - margin2.top - margin2.bottom;
 
-    var tickDateTimeParser = d3.timeParse("%Y-%m-%dT%H:%M:%S.%L");
+    var tickDateTimeParser = d3.timeParse("%Y-%m-%dT%H:%M:%S.%LZ");
 
     var x = techan.scale.financetime()
             .range([0, width]);
@@ -95,9 +119,13 @@
             .yScale(yVolume);
 
     // FIXME: change close to line chart
-    var close = techan.plot.close()
+    var master = techan.plot.close()
             .xScale(x2)
             .yScale(y2);
+
+    var averages = techan.plot.close()
+            .xScale(x)
+            .yScale(y);
 
     var xAxis = d3.axisBottom(x);
 
@@ -185,22 +213,62 @@
             .attr("class", "y axis")
             .call(yAxis2);
 
-    d3.json("data.json", function(error, json) {
-    	var accessor = tick.accessor();
-    	data = json.slice(0, 3500).map(function(d, index, array){
-    		return {
-    			date: tickDateTimeParser(d.time),
-    			high: +d.ask,
-    			low: +d.bid,
-    			spread: (d.ask - d.bid)/0.0001,
-    			volume: (d.ask - d.bid)/0.0001,
-    			open: +d.ask,
-    			close: +d.bid
-    		};
-    	});
-    	data.sort(function(a, b) { return d3.ascending(accessor.d(a), accessor.d(b)); });
+    var fileName = "fxpractice-signals-M1-oanda-EUR_USD-supstance-H4_999451_1_10000";
+    var startIndex = 0;
+    var endIndex = 1000;
 
-    	x.domain(data.map(accessor.d));
+    lineChart(fileName, function (d) {
+        return +d.averageMetadata.PT4H.average.ask;
+    }, "smaAsk");
+    lineChart(fileName, function (d) {
+        return +d.averageMetadata.PT4H.average.bid;
+    }, "smaBid");
+
+    function lineChart(fileName, dataAccessor, className) {
+        d3.json(fileName, function (error, json) {
+            var accessor = averages.accessor();
+
+            var data = json.slice(startIndex, endIndex).map(function (d) {
+                return {
+                    date: tickDateTimeParser(d.quote.time),
+                    high: dataAccessor(d),
+                    low: dataAccessor(d),
+                    close: dataAccessor(d)
+                };
+            });
+
+            x.domain(data.map(accessor.d));
+            x2.domain(x.domain());
+            y.domain(techan.scale.plot.ohlc(data, accessor).domain());
+            y2.domain(y.domain());
+
+            focus.append("g")
+                    .datum(data)
+                    .attr("class", className)
+                    .call(averages);
+            focus.select("g.className").datum(data);
+
+            draw();
+        });
+    }
+
+    d3.json(fileName, function (error, json) {
+        var accessor = tick.accessor();
+        var data = json.slice(startIndex, endIndex).map(function (d, index, array) {
+            var quote = d.quote;
+            return {
+                date: tickDateTimeParser(quote.time),
+                high: +quote.ask,
+                low: +quote.bid,
+                spread: (quote.ask - quote.bid) / 0.0001,
+                volume: (quote.ask - quote.bid) / 0.0001,
+                open: +quote.ask,
+                close: +quote.bid,
+                signal: quote.signal
+            };
+        });
+
+        x.domain(data.map(accessor.d));
         x2.domain(x.domain());
         y.domain(techan.scale.plot.ohlc(data, accessor).domain());
         y2.domain(y.domain());
@@ -209,7 +277,7 @@
         focus.select("g.tick").datum(data);
         focus.select("g.spread").datum(data);
 
-        context.select("g.close").datum(data).call(close);
+        context.select("g.close").datum(data).call(master);
         context.select("g.x.axis").call(xAxis2);
 
         // Associate the brush with the scale and render the brush only AFTER a domain has been applied
@@ -220,22 +288,24 @@
     });
 
     function brushed() {
-        var zoomable = x.zoomable(),
-            zoomable2 = x2.zoomable();
+        var zoomable = x.zoomable();
+        var zoomable2 = x2.zoomable();
 
         zoomable.domain(zoomable2.domain());
-        if(d3.event.selection !== null) zoomable.domain(d3.event.selection.map(zoomable.invert));
+        if (d3.event.selection !== null) zoomable.domain(d3.event.selection.map(zoomable.invert));
         draw();
     }
 
     function draw() {
-        var tickSelection = focus.select("g.tick"),
-            data = tickSelection.datum();
+        var tickSelection = focus.select("g.tick");
+        var data = tickSelection.datum();
         y.domain(techan.scale.plot.ohlc(data.slice.apply(data, x.zoomable().domain()), tick.accessor()).domain());
         tickSelection.call(tick);
         focus.select("g.spread").call(volume);
         focus.select("g.x.axis").call(xAxis);
         focus.select("g.y.axis").call(yAxis);
+        focus.select("g.smaAsk").call(averages);
+        focus.select("g.smaBid").call(averages);
     }
 
 </script>
