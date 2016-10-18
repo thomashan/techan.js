@@ -75,18 +75,57 @@
         fill: orange;
     }
 
+    path.tradearrow {
+        stroke: none;
+    }
+
+    path.tradearrow.buy {
+        fill: #0000FF;
+    }
+
+    path.tradearrow.buy-pending {
+        fill-opacity: 0.2;
+        stroke: #0000FF;
+        stroke-width: 1.5;
+    }
+
+    path.tradearrow.sell {
+        fill: #9900FF;
+    }
+
+    .tradearrow path.highlight {
+        fill: none;
+        stroke-width: 2;
+    }
+
+    .tradearrow path.highlight.buy,.tradearrow path.highlight.buy-pending {
+        stroke: #0000FF;
+    }
+
+    .tradearrow path.highlight.buy-pending {
+        fill: #0000FF;
+        fill-opacity: 0.3;
+    }
+
+    .tradearrow path.highlight.sell {
+        stroke: #9900FF;
+    }
+
 </style>
 <body>
 <button>Update</button>
 <script src="http://d3js.org/d3.v4.min.js"></script>
 <script src="http://techanjs.org/techan.min.js"></script>
 <script>
+    var masterHeight = 80;
+    var detailHeight = 800;
+    var mainWidth = 1900;
 
     var margin = {top: 20, right: 20, bottom: 100, left: 55},
-        margin2 = {top: 420, right: 20, bottom: 20, left: 55},
-        width = 960 - margin.left - margin.right,
-        height = 500 - margin.top - margin.bottom,
-        height2 = 500 - margin2.top - margin2.bottom;
+        margin2 = {top: detailHeight - masterHeight, right: 20, bottom: 20, left: 55},
+        width = mainWidth - margin.left - margin.right,
+        height = detailHeight - margin.top - margin.bottom,
+        height2 = detailHeight - margin2.top - margin2.bottom;
 
     var tickDateTimeParser = d3.timeParse("%Y-%m-%dT%H:%M:%S.%LZ");
 
@@ -112,6 +151,11 @@
     var tick = techan.plot.tick()
             .xScale(x)
             .yScale(y);
+
+    var tradearrow = techan.plot.tradearrow()
+            .xScale(x)
+            .yScale(y)
+            .orient(function(d) { return d.type.startsWith("BUY") ? "up" : "down"; });
 
     // FIXME: change volume to spead chart
     var volume = techan.plot.volume()
@@ -213,16 +257,42 @@
             .attr("class", "y axis")
             .call(yAxis2);
 
-    var fileName = "fxpractice-signals-M1-oanda-EUR_USD-supstance-H4_999451_1_10000";
+    var fileName = "fxpractice-signals-S5-oanda-EUR_USD-supstance-H4_995465_1_10000";
+    var commandFileName = "fxpractice-commands-S5-oanda-EUR_USD-supstance-H4";
     var startIndex = 0;
-    var endIndex = 1000;
+    var endIndex = 10000;
 
     lineChart(fileName, function (d) {
-        return +d.averageMetadata.PT4H.average.ask;
+        return +d.averageMetadata.PT6H.average.ask;
     }, "smaAsk");
     lineChart(fileName, function (d) {
-        return +d.averageMetadata.PT4H.average.bid;
+        return +d.averageMetadata.PT6H.average.bid;
     }, "smaBid");
+    tradeChart(commandFileName);
+
+    function tradeChart(commandFileName) {
+        d3.json(commandFileName, function (error, json) {
+            var tradeData = json.map(function (d) {
+                return {
+                    date: tickDateTimeParser(d.time),
+                    type: d.action,
+                    price: +d.executionPrice,
+                    quantity: 0
+                };
+            });
+
+            x.domain(tradeData.map(accessor.d));
+            x2.domain(x.domain());
+            y.domain(techan.scale.plot.close(data, accessor).domain());
+            y2.domain(y.domain());
+
+            focus.append("g")
+                    .attr("class", "tradearrow")
+                    .datum(tradeData);
+
+            draw();
+        });
+    }
 
     function lineChart(fileName, dataAccessor, className) {
         d3.json(fileName, function (error, json) {
@@ -306,6 +376,7 @@
         focus.select("g.y.axis").call(yAxis);
         focus.select("g.smaAsk").call(averages);
         focus.select("g.smaBid").call(averages);
+        focus.select("g.tradearrow").call(tradearrow);
     }
 
 </script>
