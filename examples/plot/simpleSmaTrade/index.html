@@ -277,8 +277,8 @@
             });
 
             detailsX.domain(tradeData.map(accessor.d));
-            masterX.domain(detailsX.domain());
             detailsY.domain(techan.scale.plot.close(data, accessor).domain());
+            masterX.domain(detailsX.domain());
             masterY.domain(detailsY.domain());
 
             focus.append("g")
@@ -303,8 +303,8 @@
             });
 
             detailsX.domain(data.map(accessor.d));
-            masterX.domain(detailsX.domain());
             detailsY.domain(techan.scale.plot.ohlc(data, accessor).domain());
+            masterX.domain(detailsX.domain());
             masterY.domain(detailsY.domain());
 
             focus.append("g")
@@ -335,8 +335,8 @@
             });
 
             detailsX.domain(data.map(accessor.d));
-            masterX.domain(detailsX.domain());
             detailsY.domain(techan.scale.plot.ohlc(data, accessor).domain());
+            masterX.domain(detailsX.domain());
             masterY.domain(detailsY.domain());
             yVolume.domain(techan.scale.plot.volume(data).domain());
 
