@@ -269,6 +269,7 @@
         return +d.averageMetadata.PT6H.average.bid;
     }, "smaBid");
     tradeChart(commandFileName);
+    detailsChart(fileName);
 
     function tradeChart(commandFileName) {
         d3.json(commandFileName, function (error, json) {
@@ -322,40 +323,44 @@
         });
     }
 
-    d3.json(fileName, function (error, json) {
-        var accessor = tick.accessor();
-        var data = json.slice(startIndex, endIndex).map(function (d, index, array) {
-            var quote = d.quote;
-            return {
-                date: tickDateTimeParser(quote.time),
-                high: +quote.ask,
-                low: +quote.bid,
-                spread: (quote.ask - quote.bid) / 0.0001,
-                volume: (quote.ask - quote.bid) / 0.0001,
-                open: +quote.ask,
-                close: +quote.bid,
-                signal: quote.signal
-            };
+    function detailsChart(fileName) {
+        d3.json(fileName, function (error, json) {
+            var accessor = tick.accessor();
+            var data = json.slice(startIndex, endIndex).map(function (d, index, array) {
+                var quote = d.quote;
+                return {
+                    date: tickDateTimeParser(quote.time),
+                    high: +quote.ask,
+                    low: +quote.bid,
+                    spread: (quote.ask - quote.bid) / 0.0001,
+                    volume: (quote.ask - quote.bid) / 0.0001,
+                    open: +quote.ask,
+                    close: +quote.bid,
+                    signal: quote.signal
+                };
+            });
+
+            detailsX.domain(data.map(accessor.d));
+            masterX.domain(detailsX.domain());
+            detailsY.domain(techan.scale.plot.ohlc(data, accessor).domain());
+            masterY.domain(detailsY.domain());
+            yVolume.domain(techan.scale.plot.volume(data).domain());
+
+            focus.select("g.tick").datum(data);
+            focus.select("g.spread").datum(data);
+
+            context.select("g.close").datum(data).call(master);
+            context.select("g.masterX.axis").call(masterXAxis);
+
+            // Associate the brush with the scale and render the brush only AFTER a domain has been applied
+            context.select("g.pane").call(brush).selectAll("rect").attr("height", height2);
+
+            detailsX.zoomable().domain(masterX.zoomable().domain());
+            draw();
         });
+    }
 
-        detailsX.domain(data.map(accessor.d));
-        masterX.domain(detailsX.domain());
-        detailsY.domain(techan.scale.plot.ohlc(data, accessor).domain());
-        masterY.domain(detailsY.domain());
-        yVolume.domain(techan.scale.plot.volume(data).domain());
 
-        focus.select("g.tick").datum(data);
-        focus.select("g.spread").datum(data);
-
-        context.select("g.close").datum(data).call(master);
-        context.select("g.masterX.axis").call(masterXAxis);
-
-        // Associate the brush with the scale and render the brush only AFTER a domain has been applied
-        context.select("g.pane").call(brush).selectAll("rect").attr("height", height2);
-
-        detailsX.zoomable().domain(masterX.zoomable().domain());
-        draw();
-    });
 
     function brushed() {
         var zoomable = detailsX.zoomable();
