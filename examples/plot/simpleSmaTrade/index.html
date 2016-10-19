@@ -119,7 +119,7 @@
 <script>
     var masterHeight = 80;
     var detailHeight = 800;
-    var mainWidth = 1200;
+    var mainWidth = 1800;
 
     var margin = {top: 20, right: 20, bottom: 100, left: 55},
         margin2 = {top: detailHeight - masterHeight, right: 20, bottom: 20, left: 55},
@@ -285,8 +285,6 @@
             focus.append("g")
                     .attr("class", "tradearrow")
                     .datum(tradeData);
-
-            draw();
         });
     }
 
@@ -307,12 +305,9 @@
             detailsY.domain(techan.scale.plot.ohlc(data, accessor).domain());
 
             focus.append("g")
-                    .datum(data)
                     .attr("class", className)
+                    .datum(data)
                     .call(averages);
-            focus.select("g.className").datum(data);
-
-            draw();
         });
     }
 
