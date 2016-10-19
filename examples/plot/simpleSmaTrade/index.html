@@ -354,13 +354,12 @@
     }
 
 
-
     function brushed() {
-        var zoomable = detailsX.zoomable();
-        var zoomable2 = masterX.zoomable();
+        var detailsZoomable = detailsX.zoomable();
+        var masterZoomable = masterX.zoomable();
 
-        zoomable.domain(zoomable2.domain());
-        if (d3.event.selection !== null) zoomable.domain(d3.event.selection.map(zoomable.invert));
+        detailsZoomable.domain(masterZoomable.domain());
+        if (d3.event.selection !== null) detailsZoomable.domain(d3.event.selection.map(detailsZoomable.invert));
         draw();
     }
 
