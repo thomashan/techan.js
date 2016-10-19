@@ -285,6 +285,7 @@
             focus.append("g")
                     .attr("class", "tradearrow")
                     .datum(tradeData);
+            draw();
         });
     }
 
@@ -305,9 +306,10 @@
             detailsY.domain(techan.scale.plot.ohlc(data, accessor).domain());
 
             focus.append("g")
-                    .attr("class", className)
+                    .attr("class", "averages " + className)
                     .datum(data)
                     .call(averages);
+            draw();
         });
     }
 
@@ -360,16 +362,29 @@
 
     function draw() {
         var tickSelection = focus.select("g.tick");
-        var averageSelection = focus.select("g.tick");
-        var data = tickSelection.datum();
-        detailsY.domain(techan.scale.plot.ohlc(data.slice.apply(data, detailsX.zoomable().domain()), tick.accessor()).domain());
+        var smaBidData = focus.select("g.averages.smaBid").datum();
+        var smaAskData = focus.select("g.averages.smaAsk").datum();
+        var tickData = tickSelection.datum();
+        var chartDomain = getChartDomain(tickData, smaBidData, smaAskData);
+        detailsY.domain(chartDomain);
         tickSelection.call(tick);
         focus.select("g.spread").call(volume);
         focus.select("g.masterX.axis").call(detailsXAxis);
         focus.select("g.y.axis").call(detailsYAxis);
-        focus.select("g.smaAsk").call(averages);
-        focus.select("g.smaBid").call(averages);
+        focus.select("g.averages.smaAsk").call(averages);
+        focus.select("g.averages.smaBid").call(averages);
         focus.select("g.tradearrow").call(tradearrow);
+    }
+
+    function getChartDomain(tickData, smaBidData, smaAskData) {
+        var tickYDomain = techan.scale.plot.ohlc(tickData.slice.apply(tickData, detailsX.zoomable().domain()), tick.accessor()).domain();
+        var smaBidYDomain = techan.scale.plot.close(smaBidData.slice.apply(smaBidData, detailsX.zoomable().domain()), averages.accessor()).domain();
+        var smaAskYDomain = techan.scale.plot.close(smaAskData.slice.apply(smaAskData, detailsX.zoomable().domain()), averages.accessor()).domain();
+
+        var chartMinY = Math.min(tickYDomain[0], smaBidYDomain[0], smaAskYDomain[0]);
+        var chartMaxY = Math.max(tickYDomain[1], smaBidYDomain[1], smaAskYDomain[1]);
+
+        return [chartMinY, chartMaxY];
     }
 
 </script>
