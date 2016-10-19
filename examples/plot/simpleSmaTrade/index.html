@@ -146,6 +146,7 @@
     var masterXAxis = d3.axisBottom(masterX);
     var masterYAxis = d3.axisLeft(masterY)
             .ticks(0);
+    var chartYMin, chartYMax;
 
     var brush = d3.brushX()
             .extent([[0, 0], [width, height2]])
@@ -304,8 +305,6 @@
 
             detailsX.domain(data.map(accessor.d));
             detailsY.domain(techan.scale.plot.ohlc(data, accessor).domain());
-            masterX.domain(detailsX.domain());
-            masterY.domain(detailsY.domain());
 
             focus.append("g")
                     .datum(data)
@@ -367,6 +366,7 @@
 
     function draw() {
         var tickSelection = focus.select("g.tick");
+        var averageSelection = focus.select("g.tick");
         var data = tickSelection.datum();
         detailsY.domain(techan.scale.plot.ohlc(data.slice.apply(data, detailsX.zoomable().domain()), tick.accessor()).domain());
         tickSelection.call(tick);
