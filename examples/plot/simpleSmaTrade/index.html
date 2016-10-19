@@ -79,7 +79,7 @@
         stroke: none;
     }
 
-    path.tradearrow.buy {
+    path.tradearrow.BUY {
         fill: #0000FF;
     }
 
@@ -89,8 +89,12 @@
         stroke-width: 1.5;
     }
 
-    path.tradearrow.sell {
+    path.tradearrow.SELL {
         fill: #9900FF;
+    }
+
+    path.tradearrow.CLOSE {
+        fill: yellow;
     }
 
     .tradearrow path.highlight {
@@ -159,7 +163,15 @@
     var tradearrow = techan.plot.tradearrow()
             .xScale(detailsX)
             .yScale(detailsY)
-            .orient(function(d) { return d.type.startsWith("BUY") ? "up" : "down"; });
+            .orient(function(d) {
+                if(d.type.startsWith("BUY")) {
+                    return "up";
+                }
+                if(d.type.startsWith("CLOSE")) {
+                    return "right";
+                }
+                return "down";
+            });
 
     // FIXME: change volume to spread chart
     var volume = techan.plot.volume()
@@ -257,17 +269,18 @@
     var startIndex = 0;
     var endIndex = 10000;
 
+    tradeChart(commandFileName);
     lineChart(fileName, function (d) {
-        return +d.averageMetadata.PT6H.average.ask;
+        return +d.averageMetadata.PT4H.average.ask;
     }, "smaAsk");
     lineChart(fileName, function (d) {
-        return +d.averageMetadata.PT6H.average.bid;
+        return +d.averageMetadata.PT4H.average.bid;
     }, "smaBid");
-    tradeChart(commandFileName);
     detailsChart(fileName);
 
     function tradeChart(commandFileName) {
         d3.json(commandFileName, function (error, json) {
+            var accessor = tradearrow.accessor();
             var tradeData = json.map(function (d) {
                 return {
                     date: tickDateTimeParser(d.time),
@@ -278,7 +291,7 @@
             });
 
             detailsX.domain(tradeData.map(accessor.d));
-            detailsY.domain(techan.scale.plot.close(data, accessor).domain());
+            detailsY.domain(techan.scale.plot.tradearrow(tradeData, accessor).domain());
             masterX.domain(detailsX.domain());
             masterY.domain(detailsY.domain());
 
