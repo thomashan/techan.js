@@ -79,7 +79,7 @@
         stroke: none;
     }
 
-    path.tradearrow.BUY {
+    path.tradearrow.buy {
         fill: #0000FF;
     }
 
@@ -89,12 +89,12 @@
         stroke-width: 1.5;
     }
 
-    path.tradearrow.SELL {
+    path.tradearrow.sell {
         fill: #9900FF;
     }
 
-    path.tradearrow.CLOSE {
-        fill: yellow;
+    path.tradearrow.close {
+        fill: grey;
     }
 
     .tradearrow path.highlight {
@@ -163,10 +163,10 @@
             .xScale(detailsX)
             .yScale(detailsY)
             .orient(function(d) {
-                if(d.type.startsWith("BUY")) {
+                if(d.type === "buy") {
                     return "up";
                 }
-                if(d.type.startsWith("CLOSE")) {
+                if(d.type === "close") {
                     return "right";
                 }
                 return "down";
@@ -283,7 +283,7 @@
             var tradeData = json.map(function (d) {
                 return {
                     date: tickDateTimeParser(d.time),
-                    type: d.action,
+                    type: d.action.toLowerCase(),
                     price: +d.executionPrice,
                     quantity: 0
                 };
